@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}缴费 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">缴费信息</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>就诊信息</h5>
+                        <p>医生：{{ appointment.doctor.name }}</p>
+                        <p>科室：{{ appointment.doctor.department }}</p>
+                        <p>就诊日期：{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</p>
+                        <p>就诊时间：{{ appointment.appointment_time.strftime('%H:%M') }}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>缴费信息</h5>
+                        {% if payment %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <p>金额：¥{{ "%.2f"|format(payment.amount) }}</p>
+                                    <p>状态：
+                                        {% if payment.status == 'unpaid' %}
+                                            <span class="badge bg-warning">待支付</span>
+                                        {% else %}
+                                            <span class="badge bg-success">已支付</span>
+                                        {% endif %}
+                                    </p>
+                                    {% if payment.payment_date %}
+                                        <p>支付时间：{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                                    {% endif %}
+                                    {% if payment.payment_method %}
+                                        <p>支付方式：{{ payment.payment_method }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if payment.status == 'unpaid' %}
+                                <form method="POST" class="mt-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">选择支付方式</label>
+                                        <select class="form-select" name="payment_method" required>
+                                            <option value="">请选择支付方式</option>
+                                            <option value="支付宝">支付宝</option>
+                                            <option value="微信支付">微信支付</option>
+                                            <option value="银行卡">银行卡</option>
+                                        </select>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">确认支付</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                暂无缴费信息
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('patient.dashboard') }}" class="btn btn-secondary">返回列表</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

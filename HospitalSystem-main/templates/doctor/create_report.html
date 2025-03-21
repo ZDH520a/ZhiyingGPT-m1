@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}开具检查报告 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">开具检查报告</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>就诊信息</h5>
+                        <p>患者：{{ appointment.patient.name }}</p>
+                        <p>就诊日期：{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</p>
+                        <p>就诊时间：{{ appointment.appointment_time.strftime('%H:%M') }}</p>
+                    </div>
+
+                    <form method="POST" id="reportForm">
+                        <div class="mb-3">
+                            <label class="form-label">报告类型</label>
+                            <select name="report_type" class="form-select" id="reportTypeSelect" required>
+                                <option value="">请选择报告类型</option>
+                                <optgroup label="描述型报告">
+                                    <option value="常规体检报告">常规体检报告</option>
+                                    <option value="影像学检查报告">影像学检查报告</option>
+                                    <option value="专科检查报告">专科检查报告</option>
+                                </optgroup>
+                                <optgroup label="数据型报告">
+                                    <option value="血常规检验">血常规检验</option>
+                                    <option value="生化检验">生化检验</option>
+                                    <option value="免疫检验">免疫检验</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- 描述型报告内容 -->
+                        <div id="descriptiveReport" class="mb-3" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">检查发现</label>
+                                <textarea name="findings" class="form-control" rows="4"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">诊断意见</label>
+                                <textarea name="diagnosis" class="form-control" rows="4"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">建议</label>
+                                <textarea name="recommendations" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 数据型报告内容 -->
+                        <div id="dataReport" class="mb-3" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="dataTable">
+                                    <thead>
+                                        <tr>
+                                            <th>检测项目</th>
+                                            <th>检测结果</th>
+                                            <th>参考范围</th>
+                                            <th>单位</th>
+                                            <th>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="addDataRow()">
+                                                    添加项目
+                                                </button>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dataTableBody">
+                                        <tr>
+                                            <td><input type="text" class="form-control" name="items[]" required></td>
+                                            <td><input type="text" class="form-control" name="results[]" required></td>
+                                            <td><input type="text" class="form-control" name="ranges[]" required></td>
+                                            <td><input type="text" class="form-control" name="units[]" required></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="removeDataRow(this)">
+                                                    删除
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">检查费用</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" name="amount" class="form-control" step="0.01" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">提交报告</button>
+                            <a href="{{ url_for('doctor.patients') }}" class="btn btn-secondary">返回列表</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('reportTypeSelect').addEventListener('change', function() {
+    const selectedType = this.value;
+    const descriptiveTypes = ['常规体检报告', '影像学检查报告', '专科检查报告'];
+    const dataTypes = ['血常规检验', '生化检验', '免疫检验'];
+    
+    const descriptiveReport = document.getElementById('descriptiveReport');
+    const dataReport = document.getElementById('dataReport');
+    
+    if (descriptiveTypes.includes(selectedType)) {
+        descriptiveReport.style.display = 'block';
+        dataReport.style.display = 'none';
+        // 设置必填字段
+        document.querySelectorAll('#descriptiveReport textarea').forEach(textarea => {
+            textarea.required = true;
+        });
+        document.querySelectorAll('#dataReport input').forEach(input => {
+            input.required = false;
+        });
+    } else if (dataTypes.includes(selectedType)) {
+        descriptiveReport.style.display = 'none';
+        dataReport.style.display = 'block';
+        // 设置必填字段
+        document.querySelectorAll('#descriptiveReport textarea').forEach(textarea => {
+            textarea.required = false;
+        });
+        document.querySelectorAll('#dataReport input').forEach(input => {
+            input.required = true;
+        });
+    } else {
+        descriptiveReport.style.display = 'none';
+        dataReport.style.display = 'none';
+    }
+});
+
+function addDataRow() {
+    const tbody = document.getElementById('dataTableBody');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control" name="items[]" required></td>
+        <td><input type="text" class="form-control" name="results[]" required></td>
+        <td><input type="text" class="form-control" name="ranges[]" required></td>
+        <td><input type="text" class="form-control" name="units[]" required></td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeDataRow(this)">
+                删除
+            </button>
+        </td>
+    `;
+    tbody.appendChild(newRow);
+}
+
+function removeDataRow(button) {
+    const tbody = document.getElementById('dataTableBody');
+    if (tbody.children.length > 1) {
+        button.closest('tr').remove();
+    } else {
+        alert('至少保留一行数据');
+    }
+}
+
+// 表单提交前的处理
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const reportType = formData.get('report_type');
+    const descriptiveTypes = ['常规体检报告', '影像学检查报告', '专科检查报告'];
+    
+    // 根据报告类型组织内容
+    let content = {};
+    
+    if (descriptiveTypes.includes(reportType)) {
+        content = {
+            findings: formData.get('findings'),
+            diagnosis: formData.get('diagnosis'),
+            recommendations: formData.get('recommendations')
+        };
+    } else {
+        const items = formData.getAll('items[]');
+        const results = formData.getAll('results[]');
+        const ranges = formData.getAll('ranges[]');
+        const units = formData.getAll('units[]');
+        
+        content = {
+            data: items.map((item, index) => ({
+                item: item,
+                result: results[index],
+                range: ranges[index],
+                unit: units[index]
+            }))
+        };
+    }
+    
+    // 添加隐藏字段存储组织好的内容
+    const contentInput = document.createElement('input');
+    contentInput.type = 'hidden';
+    contentInput.name = 'content';
+    contentInput.value = JSON.stringify(content);
+    this.appendChild(contentInput);
+    
+    this.submit();
+});
+</script>
+{% endblock %} 

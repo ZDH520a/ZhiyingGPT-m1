@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLaVA-Med - AI 医学影像分析</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; display: flex; height: 100vh; overflow: hidden; }
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 280px;
+            background-color: #398ec3; /* 深蓝色 */
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .sidebar h2 { font-size: 20px; margin-bottom: 20px; }
+        .example {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .example img { width: 100px; height: 100px; border-radius: 5px; margin-right: 10px; }
+        .example p { font-size: 14px; color: #ffffff; }
+
+        /* 主体内容 */
+        .main {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 24px; color: #1E3A8A; font-weight: bold; display: flex; align-items: center; }
+        .header img { width: 150px; height: 150px; margin-right: 15px; }
+        .header nav a {
+            text-decoration: none;
+            color: #1E3A8A;
+            margin-left: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* 上传区域 */
+        .upload-box {
+            width: 60%;
+            height: 180px;
+            border: 3px dashed #1E3A8A;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1E3A8A;
+            background: #ffffff;
+            margin-bottom: 20px;
+            margin: 0 auto; /* 居中 */
+        }
+
+        /* 聊天对话框 */
+        .chat-box {
+            width: 60%;
+            margin: 0 auto; /* 居中 */
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chat-title { font-size: 18px; font-weight: bold; color: #1E3A8A; margin-bottom: 10px; }
+        .chat-message {
+            background: #eef2ff;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1E3A8A;
+        }
+        .chat-reply {
+            background: #c7d2fe;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            border-left: 4px solid #6366f1;
+        }
+
+        /* 选择模型按钮 */
+        .model-selection {
+            margin-top: 10px;
+            text-align: center;
+            position: relative;
+        }
+        .btn {
+            padding: 5px 10px;
+            background-color: #1E3A8A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+            width: 100%;
+        }
+        .dropdown-menu p {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .dropdown-menu p:last-child {
+            border-bottom: none;
+        }
+        /* 添加 form-control 样式 */
+        .form-control {
+            width: 60%;
+            padding: 10px;
+            border: 1px solid #1E3A8A;
+            border-radius: 8px;
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            color: #666;
+            margin: 0 auto; /* 居中 */
+        }
+                /* 右侧栏样式 */
+        .sidebar-right {
+            width: 280px; /* 根据需要调整宽度 */
+            background-color: #398ec3; /* 深蓝色，与左侧栏保持一致 */
+            color: rgb(245, 243, 243);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .sidebar-right .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* 按钮之间的间距 */
+        }
+
+        .sidebar-right .btn {
+            padding: 10px;
+            background-color: #1E3A8A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .rightsidebar {
+            width: 60px; /* 边栏宽度 */
+            background-color: #fff; /* 背景颜色 */
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px; /* 顶部内边距 */
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1); /* 阴影效果 */
+        }
+
+        .icon-list {
+            flex: 1; /* 图标列表占据剩余空间 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .icon-item {
+            margin: 10px 0; /* 图标之间的间距 */
+        }
+
+        .icon-item img {
+            width: 24px; /* 图标大小 */
+            height: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px; /* 用户信息与图标列表的间距 */
+        }
+
+        .avatar {
+            width: 40px; /* 用户头像大小 */
+            height: 40px;
+            border-radius: 50%; /* 圆形头像 */
+            overflow: hidden;
+        }
+
+        .user-actions {
+            margin-top: 10px; /* 操作按钮与头像的间距 */
+        }
+
+        .action-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background-color: #f0f0f0; /* 按钮背景颜色 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        .action-button:hover {
+            background-color: #e0e0e0; /* 按钮悬停效果 */
+        }
+        .sidebar2 {
+            position: fixed;
+            top: 50%;
+            right: 0;
+            width: 80px;
+            height: 50vh;
+            display: flex;
+            background-color: rgb(255, 255, 255); /* 侧边栏背景颜色 */
+            flex-direction: column;
+            align-items: center;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(229, 226, 226, 0.2); /* 侧边栏阴影效果 */
+            transform: translate(-40%, -50%);
+            transition: transform .2s ease;
+            z-index: 1000; /* 确保侧边栏在最上层 */
+        }
+
+        .sidebar2 .title {
+            width: 66px; /* 图标大小 */
+            margin: 25px 0 ; /* 图标之间的间距 */
+            cursor: pointer;
+            border-bottom: 1px solid #353333; /* 添加下边框 */
+        }
+
+        .sidebar2 .sidebar-icon {
+            width: 35px; /* 图标大小 */
+            height: 35px;
+            margin: 18px 0; /* 图标之间的间距 */
+            cursor: pointer;
+        }
+
+        .sidebar2 .sidebar-icon:hover {
+            opacity: 0.8; /* 图标悬停效果 */
+        }
+
+        .sidebar2 .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .sidebar2 .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    
+    <!-- 左侧导航栏 --> 
+    <div class="sidebar">
+        
+        <img src="{{ url_for('static', filename='images/logo_koutu.png') }}" alt="Logo" style="width: 180px; height: auto; margin-bottom: 20px; border-radius: 10px;">
+        <h2>稚小影</h2>
+        <h2>儿科全模态诊断专家</h2>
+        <div class="example">
+            <img src="{{ url_for('static', filename='images/CT.jpg') }}" alt="CT 模态">
+            <p>CT 模态</p>
+        </div>
+        <div class="example">
+            <img src="{{ url_for('static', filename='images/mri.jpg') }}" alt="MRI 模态">
+            <p>MRI 模态</p>
+        </div>
+        <div class="example">
+            <img src="{{ url_for('static', filename='images/wsi.jpg') }}" alt="病理模态">
+            <p>病理模态</p>
+        </div>
+        <div class="example">
+            <img src="{{ url_for('static', filename='images/X-ray.jpg') }}" alt="X-Ray 模态">
+            <p>X-Ray 模态</p>
+        </div>
+    </div>
+    
+    <!-- 右侧内容 -->
+    <div class="main">
+        
+        
+        <div class="header">
+            <!-- 标题 -->
+            <h1 style="margin-bottom: 15px; font-size: 32px;">稚影儿科全模态诊断系统</h1>
+            <!-- 导航链接 -->
+            <nav style="display: flex; gap: 15px;">
+                <a href="/login">登录</a> <!-- 添加登录链接 -->
+                <a href="#">团队</a>
+                <a href="#">联系我们</a>
+            </nav>
+        </div>
+
+        <!-- 上传区域 -->
+        <div class="upload-box">
+            📤 拖放病理图像到此处 或 点击上传
+        </div>
+
+
+
+
+        
+        <!-- 聊天对话框 -->
+        <div class="chat-box" >
+            <div class="chat-title">🔬 诊断结果</div>
+            <div class="chat-message">
+                <p>请上传图像并点击"一键生成病理报告"按钮开始分析。</p>
+            </div>
+        </div>
+
+        <!-- 空白区域 -->
+        <div style="height: 300px;"></div>
+
+
+
+                <!-- 文本提示框 -->
+        <div style="margin-bottom: 15px; position: relative;display: flex; flex-direction: column; align-items: center;">
+            <textarea class="form-control" placeholder="请输入病人的基本信息和临床表现（如：年龄、性别、主诉、症状、体征等）..." ></textarea>
+            </textarea>
+            
+            <!-- 模型选择下拉菜单 -->
+            <div class="model-selection" style="position: absolute; bottom: 20px; left: 290px;">
+                <button class="btn dropdown-toggle" style="padding: 6px 25px; background-color: #1E3A8A; color: white; border: none; border-radius: 8px;">
+                    ZhiyingGPT-m1
+                    <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">&#9660;</span>
+                </button>
+                <div class="dropdown-menu" style="display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 1000; width: 100%;">
+                    <p>ZhiyingGPT-m1</p>
+                    <p>ZhiyingGPT-m2</p>
+                    <p>ZhiyingGPT-m3</p>
+                    <p>ZhiyingGPT-m4</p>
+                </div>
+            </div>
+            
+            <!-- 引入 Font Awesome 图标库 -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+                    <!-- 一键生成病理报告按钮 -->
+            <button class="btn" style="position: absolute; bottom: 20px; left: 450px; padding: 4px 8px; border: 1px solid #444; color: #000; border-radius: 8px; background-color: transparent;">
+                <i class="fas fa-file-export" style="margin-right: 8px;"></i> <!-- 添加导出图标 -->
+                一键生成病理报告
+            </button>
+                        <!-- 上传按钮 -->
+            <button class="btn" style="position: absolute; bottom: 20px; right: 300px; padding: 8px; border: 1px solid #444; color: #000; border-radius: 8px; background-color: transparent;">
+                <i class="fas fa-upload" style="font-size: 1.2em;"></i> <!-- 添加上传图标，调整图标大小 -->
+            </button>
+            
+        </div>
+        
+        </div>
+         <!-- 右边栏 -->
+         <div class="sidebar2">
+            <img src="{{ url_for('static', filename='images/KIMI.png') }}" alt="首页" class="title">
+            <img src="{{ url_for('static', filename='images/历史记录.png') }}" alt="首页" class="sidebar-icon">
+            <img src="{{ url_for('static', filename='images/开启新对话.png') }}" alt="服务" class="sidebar-icon">
+            <img src="about-icon.png" alt="关于" class="sidebar-icon">
+            <img src="contact-icon.png" alt="联系" class="sidebar-icon">
+            <div class="avatar">
+                <img src="{{ url_for('static', filename='images/头像.jpg') }}" alt="用户头像">
+            </div>
+         </div>
+
+        
+   

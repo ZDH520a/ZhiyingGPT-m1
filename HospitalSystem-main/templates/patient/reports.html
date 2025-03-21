@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}检查报告 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">检查报告</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>就诊信息</h5>
+                        <p>医生：{{ appointment.doctor.name }}</p>
+                        <p>科室：{{ appointment.doctor.department }}</p>
+                        <p>就诊日期：{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</p>
+                        <p>就诊时间：{{ appointment.appointment_time.strftime('%H:%M') }}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>检查报告</h5>
+                        {% if appointment.reports %}
+                            {% for report in appointment.reports %}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ report.report_type }}</h6>
+                                        <small class="text-muted">发布时间：{{ report.publish_date.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if report.report_type in ['常规体检报告', '影像学检查报告', '专科检查报告'] %}
+                                        {% set content = report.content|from_json %}
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">检查发现</h6>
+                                            <p>{{ content.findings }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">诊断意见</h6>
+                                            <p>{{ content.diagnosis }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">建议</h6>
+                                            <p>{{ content.recommendations }}</p>
+                                        </div>
+                                    {% else %}
+                                        {% set content = report.content|from_json %}
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>检测项目</th>
+                                                        <th>检测结果</th>
+                                                        <th>参考范围</th>
+                                                        <th>单位</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in content.data %}
+                                                    <tr>
+                                                        <td>{{ item.item }}</td>
+                                                        <td>{{ item.result }}</td>
+                                                        <td>{{ item.range }}</td>
+                                                        <td>{{ item.unit }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                暂无检查报告
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('patient.dashboard') }}" class="btn btn-secondary">返回列表</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

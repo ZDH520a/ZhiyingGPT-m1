@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}查看报告/缴费 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">报告与缴费信息</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>就诊信息</h5>
+                        <p>患者：{{ appointment.patient.name }}</p>
+                        <p>就诊日期：{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</p>
+                        <p>就诊时间：{{ appointment.appointment_time.strftime('%H:%M') }}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>检查报告</h5>
+                        {% if appointment.reports %}
+                            {% for report in appointment.reports %}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ report.report_type }}</h6>
+                                        <small class="text-muted">发布时间：{{ report.publish_date.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if report.report_type in ['常规体检报告', '影像学检查报告', '专科检查报告'] %}
+                                        {% set content = report.content|from_json %}
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">检查发现</h6>
+                                            <p>{{ content.findings }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">诊断意见</h6>
+                                            <p>{{ content.diagnosis }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">建议</h6>
+                                            <p>{{ content.recommendations }}</p>
+                                        </div>
+                                    {% else %}
+                                        {% set content = report.content|from_json %}
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>检测项目</th>
+                                                        <th>检测结果</th>
+                                                        <th>参考范围</th>
+                                                        <th>单位</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in content.data %}
+                                                    <tr>
+                                                        <td>{{ item.item }}</td>
+                                                        <td>{{ item.result }}</td>
+                                                        <td>{{ item.range }}</td>
+                                                        <td>{{ item.unit }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">暂无检查报告</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>缴费信息</h5>
+                        {% if appointment.payments %}
+                            {% for payment in appointment.payments %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="card-title mb-1">¥{{ "%.2f"|format(payment.amount) }}</h6>
+                                            {% if payment.payment_date %}
+                                            <p class="text-muted small mb-0">支付时间：{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                                            <p class="text-muted small mb-0">支付方式：{{ payment.payment_method }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            {% if payment.status == 'unpaid' %}
+                                            <span class="badge bg-warning">待支付</span>
+                                            {% else %}
+                                            <span class="badge bg-success">已支付</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">暂无缴费记录</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid">
+                        <a href="{{ url_for('doctor.patients') }}" class="btn btn-secondary">返回列表</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}检查报告列表 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>检查报告列表</h2>
+    <div class="row">
+        {% for appointment in appointments %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ appointment.doctor.department }} - {{ appointment.doctor.name }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            就诊时间：{{ appointment.appointment_date.strftime('%Y-%m-%d') }} {{ appointment.appointment_time.strftime('%H:%M') }}
+                        </small>
+                    </p>
+                    <p class="card-text">
+                        报告数量：{{ appointment.reports.count() }}
+                    </p>
+                    <a href="{{ url_for('patient.view_report', appointment_id=appointment.id) }}" class="btn btn-primary">
+                        查看报告详情
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                暂无检查报告
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}我的预约 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的预约</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>医生</th>
+                    <th>科室</th>
+                    <th>预约日期</th>
+                    <th>预约时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>{{ appointment.doctor.name }}</td>
+                    <td>{{ appointment.doctor.department }}</td>
+                    <td>{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ appointment.appointment_time.strftime('%H:%M') }}</td>
+                    <td>
+                        {% if appointment.status == 'pending' %}
+                            <span class="badge bg-warning">待确认</span>
+                        {% elif appointment.status == 'confirmed' %}
+                            <span class="badge bg-primary">已确认</span>
+                        {% elif appointment.status == 'waiting_report' %}
+                            <span class="badge bg-info">待报告</span>
+                        {% elif appointment.status == 'completed' %}
+                            {% set has_unpaid = false %}
+                            {% for payment in appointment.payments %}
+                                {% if payment.status == 'unpaid' %}
+                                    {% set has_unpaid = true %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if has_unpaid %}
+                                <span class="badge bg-warning">待缴费</span>
+                            {% else %}
+                                {% if not appointment.evaluations.first() %}
+                                    <span class="badge bg-info">待评价</span>
+                                {% else %}
+                                    <span class="badge bg-success">已完成</span>
+                                {% endif %}
+                            {% endif %}
+                        {% elif appointment.status == 'cancelled' %}
+                            <span class="badge bg-danger">已取消</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if appointment.reports %}
+                            <a href="{{ url_for('patient.view_report', appointment_id=appointment.id) }}" class="btn btn-sm btn-info">查看报告</a>
+                        {% endif %}
+                        
+                        {% if appointment.status == 'completed' %}
+                            {% set has_unpaid = false %}
+                            {% for payment in appointment.payments %}
+                                {% if payment.status == 'unpaid' %}
+                                    {% set has_unpaid = true %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if has_unpaid %}
+                                <a href="{{ url_for('patient.make_payment', appointment_id=appointment.id) }}" class="btn btn-sm btn-warning">缴费</a>
+                            {% elif not appointment.evaluations.first() %}
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#evaluationModal{{ appointment.id }}">
+                                    评价就诊
+                                </button>
+                            {% endif %}
+                            
+                            {% if not has_unpaid %}
+                                <a href="{{ url_for('patient.make_payment', appointment_id=appointment.id) }}" class="btn btn-sm btn-secondary">缴费记录</a>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                {% if appointment.status == 'completed' and not appointment.evaluations.first() %}
+                <!-- 评价模态框 -->
+                <div class="modal fade" id="evaluationModal{{ appointment.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">评价就诊</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('patient.submit_evaluation', appointment_id=appointment.id) }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="rating" class="form-label">评分（1-5星）</label>
+                                        <select class="form-select" id="rating" name="rating" required>
+                                            <option value="5">5星（非常满意）</option>
+                                            <option value="4">4星（满意）</option>
+                                            <option value="3">3星（一般）</option>
+                                            <option value="2">2星（不满意）</option>
+                                            <option value="1">1星（非常不满意）</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="content" class="form-label">评价内容</label>
+                                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="submit" class="btn btn-primary">提交评价</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

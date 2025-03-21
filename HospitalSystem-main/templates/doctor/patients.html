@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}患者管理 - 医院预约挂号系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>患者管理</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>预约ID</th>
+                    <th>患者姓名</th>
+                    <th>预约日期</th>
+                    <th>预约时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>{{ appointment.id }}</td>
+                    <td>{{ appointment.patient.name }}</td>
+                    <td>{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ appointment.appointment_time.strftime('%H:%M') }}</td>
+                    <td>
+                        {% if appointment.status == 'pending' %}
+                        <span class="badge bg-warning">待确认</span>
+                        {% elif appointment.status == 'confirmed' %}
+                        <span class="badge bg-primary">已确认</span>
+                        {% elif appointment.status == 'waiting_report' %}
+                        <span class="badge bg-info">待报告</span>
+                        {% elif appointment.status == 'completed' %}
+                        <span class="badge bg-success">已完成</span>
+                        {% elif appointment.status == 'cancelled' %}
+                        <span class="badge bg-danger">已取消</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if appointment.status == 'confirmed' %}
+                        <form method="POST" action="{{ url_for('doctor.start_consultation', appointment_id=appointment.id) }}" class="consultation-form" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-success start-consultation">
+                                开始就诊
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if appointment.status == 'waiting_report' %}
+                            <a href="{{ url_for('doctor.create_report', appointment_id=appointment.id) }}" class="btn btn-sm btn-primary">
+                                开具检查报告
+                            </a>
+                        {% endif %}
+
+                        {% if appointment.status == 'completed' and appointment.reports %}
+                            <a href="{{ url_for('doctor.view_report', appointment_id=appointment.id) }}" class="btn btn-sm btn-info">
+                                查看报告/缴费
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 处理开始就诊表单提交
+    document.querySelectorAll('.consultation-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('button');
+            const row = button.closest('tr');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...';
+            
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('状态更新成功:', data);
+                    // 显示成功消息
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = `
+                        就诊已开始，请及时开具检查报告
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.container').insertBefore(alert, document.querySelector('.table-responsive'));
+                    
+                    // 更新状态显示
+                    const statusCell = row.querySelector('td:nth-child(4)');
+                    statusCell.innerHTML = '<span class="badge bg-info">待报告</span>';
+                    
+                    // 更新操作按钮
+                    const actionCell = row.querySelector('td:nth-child(5)');
+                    const createReportUrl = window.location.pathname.replace('/patients', '/create_report/' + data.appointment_id);
+                    actionCell.innerHTML = `<a href="${createReportUrl}" class="btn btn-sm btn-primary">开具检查报告</a>`;
+                } else {
+                    throw new Error(data.message || '操作失败');
+                }
+            })
+            .catch(error => {
+                console.error('错误:', error);
+                // 显示错误消息
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger alert-dismissible fade show';
+                alert.innerHTML = `
+                    ${error.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container').insertBefore(alert, document.querySelector('.table-responsive'));
+                
+                // 恢复按钮状态
+                button.disabled = false;
+                button.innerHTML = '开始就���';
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 
